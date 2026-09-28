@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: file:; style-src 'self'; script-src 'self';">
+  <title>SawitHeight R — MAS POPO</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="../../assets/icon.png" alt="SawitHeight R">
+      <div><span class="eyebrow">MAS POPO · ROLLING 2-PERIOD</span><h1>SawitHeight R</h1></div>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-page="data-page"><span>01</span>Data & Pair</button>
+      <button class="nav-btn" data-page="parameter-page"><span>02</span>Terrain & QC</button>
+      <button class="nav-btn" data-page="process-page"><span>03</span>Proses & Live Log</button>
+      <button class="nav-btn" data-page="result-page"><span>04</span>Hasil & Residual</button>
+    </nav>
+    <div class="runtime-card">
+      <div class="runtime-title">R Runtime</div>
+      <div id="runtime-status" class="status-pill neutral">Belum diperiksa</div>
+      <div id="runtime-version" class="runtime-detail">Rscript belum dipilih</div>
+      <button id="check-env-btn" class="secondary full">Periksa Environment</button>
+      <button id="install-packages-btn" class="ghost full" disabled>Instal Package Hilang</button>
+      <button id="tutorial-btn" class="ghost full">Buka Tutorial v0.6.0</button>
+    </div>
+    <div class="sidebar-footer"><span id="app-version">v0.6.0</span><span>PMNP</span></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><span class="eyebrow">RELATIVE HEIGHT · P95 · RESIDUAL CONFIDENCE</span><h2 id="page-title">Data & Pair</h2></div>
+      <div class="top-actions">
+        <button id="validate-btn" class="secondary">Validasi</button>
+        <button id="run-btn" class="primary">Jalankan Analisis</button>
+      </div>
+    </header>
+    <div id="alert-area" class="alert-area"></div>
+
+    <section id="data-page" class="page active">
+      <div class="hero-card">
+        <div>
+          <span class="eyebrow">v0.6.0 · P(t−1) + P(t)</span>
+          <h3>Rolling dua periode untuk residual terbaru</h3>
+          <p>Analisis memproses dua LAS/LAZ berurutan, menghitung tinggi relatif P95 per TREE_ID, technical uncertainty, peer-based residual, dan polygon residual zone. Histori lama tidak perlu dibaca ulang.</p>
+        </div>
+        <div class="hero-badges"><span>P95</span><span>BUFFER 2 m</span><span>T_TECH</span><span>PEER QC</span><span>LIVE LOG</span></div>
+      </div>
+
+      <div class="section-title"><div><span>ROLLING PAIR</span><h3>Dua periode yang dibandingkan</h3></div><p>Kode periode maksimal 3 karakter agar nama output dan field tetap aman.</p></div>
+      <div class="form-grid">
+        <div class="field-card">
+          <label>Periode sebelumnya <b>P(t−1)</b></label>
+          <input id="prev-period-code" type="text" value="P4" maxlength="3">
+          <small>Contoh P4, D1, S2.</small>
+        </div>
+        <div class="field-card">
+          <label>Periode saat ini <b>P(t)</b></label>
+          <input id="curr-period-code" type="text" value="P5" maxlength="3">
+          <small>Periode terbaru yang sedang dimonitor.</small>
+        </div>
+        <div class="field-card span-2">
+          <label>Dense point cloud P(t−1) · LAS/LAZ</label>
+          <div class="file-input"><input id="prev-point-cloud" type="text" placeholder="Pilih LAS/LAZ periode sebelumnya"><button data-picker="prev-point-cloud">Pilih</button></div>
+        </div>
+        <div class="field-card span-2">
+          <label>Dense point cloud P(t) · LAS/LAZ</label>
+          <div class="file-input"><input id="curr-point-cloud" type="text" placeholder="Pilih LAS/LAZ periode saat ini"><button data-picker="curr-point-cloud">Pilih</button></div>
+        </div>
+      </div>
+
+      <div class="section-title"><div><span>TREE REFERENCE</span><h3>Titik pokok permanen</h3></div><p>Buffer 2 m memakai TREE_ID yang sama pada kedua periode.</p></div>
+      <div class="form-grid">
+        <div class="field-card span-2">
+          <label>Titik pokok sawit</label>
+          <div class="file-input"><input id="tree-points" type="text" placeholder="SHP / GPKG / GeoJSON"><button data-picker="tree-points">Pilih</button></div>
+        </div>
+        <div class="field-card">
+          <label>Field TREE_ID</label>
+          <input id="tree-id-field" type="text" value="TREE_ID">
+          <small>Harus unik, tidak NULL, dan permanen antarperiode.</small>
+        </div>
+        <div class="field-card">
+          <label>Peer group field <span class="optional">opsional</span></label>
+          <input id="peer-field" type="text" placeholder="mis. BLOK / BATCH">
+          <small>Jika kosong, peer dibuat dari kuartil P95 periode sebelumnya.</small>
+        </div>
+      </div>
+
+      <div class="section-title"><div><span>SPATIAL REGISTRATION</span><h3>Master reference opsional</h3></div><p>Aplikasi tidak menjalankan ICP otomatis. Master disimpan sebagai metadata/audit frame; transformasi harus dilakukan di workflow point-cloud yang tervalidasi bila memang diperlukan.</p></div>
+      <div class="form-grid">
+        <div class="field-card toggle-card">
+          <label class="switch"><input id="use-master-reference" type="checkbox"><span></span>Gunakan master reference metadata</label>
+          <small>Periode full PPK/GCP terbaik dapat berada di periode mana pun.</small>
+        </div>
+        <div id="master-period-card" class="field-card hidden">
+          <label>Kode master period</label>
+          <input id="master-period-code" type="text" value="P3" maxlength="3">
+        </div>
+        <div id="master-point-card" class="field-card span-2 hidden">
+          <label>Master LAS/LAZ <span class="optional">opsional · audit only</span></label>
+          <div class="file-input"><input id="master-point-cloud" type="text" placeholder="File full PPK/GCP terbaik"><button data-picker="master-point-cloud">Pilih</button></div>
+        </div>
+        <div class="field-card span-2 confirmation-card">
+          <label class="check-line"><input id="registration-qc-confirmed" type="checkbox"> Saya sudah memastikan kedua periode dan TREE_ID berada pada reference frame horizontal yang konsisten.</label>
+          <small>Analisis residual diblokir bila konfirmasi ini belum dicentang karena XY mismatch dapat mengambil tajuk yang berbeda.</small>
+        </div>
+      </div>
+
+      <div class="section-title"><div><span>OUTPUT & RUNTIME</span><h3>Folder hasil dan Rscript</h3></div></div>
+      <div class="form-grid">
+        <div class="field-card span-2"><label>Folder output</label><div class="file-input"><input id="output-root" type="text" placeholder="Folder output"><button data-picker="output-root">Pilih</button></div></div>
+        <div class="field-card span-2"><label>Rscript.exe</label><div class="file-input"><input id="rscript-path" type="text" placeholder="Otomatis bila bundled R tersedia"><button data-picker="rscript-path">Pilih</button></div><small>Build self-contained akan memakai runtime R internal secara otomatis.</small></div>
+      </div>
+    </section>
+
+    <section id="parameter-page" class="page">
+      <div class="section-title"><div><span>TERRAIN P(t−1)</span><h3>Ground & DTM periode sebelumnya</h3></div><p>Setiap periode boleh memakai terrain reference sendiri.</p></div>
+      <div class="form-grid">
+        <div class="field-card"><label>Terrain mode P(t−1)</label><select id="terrain-mode-prev"><option value="CSF_TIN">CSF → TIN</option><option value="EXTERNAL_DTM">External DTM</option></select></div>
+        <div id="external-dtm-prev-card" class="field-card hidden"><label>External DTM P(t−1)</label><div class="file-input"><input id="external-dtm-prev" type="text"><button data-picker="external-dtm-prev">Pilih</button></div></div>
+      </div>
+
+      <div class="section-title"><div><span>TERRAIN P(t)</span><h3>Ground & DTM periode saat ini</h3></div></div>
+      <div class="form-grid">
+        <div class="field-card"><label>Terrain mode P(t)</label><select id="terrain-mode-curr"><option value="CSF_TIN">CSF → TIN</option><option value="EXTERNAL_DTM">External DTM</option></select></div>
+        <div id="external-dtm-curr-card" class="field-card hidden"><label>External DTM P(t)</label><div class="file-input"><input id="external-dtm-curr" type="text"><button data-picker="external-dtm-curr">Pilih</button></div></div>
+      </div>
+
+      <div class="section-title"><div><span>POINT CLOUD QC</span><h3>Noise, CRS, dan CSF</h3></div><p>Parameter ground diterapkan konsisten pada kedua periode ketika CSF diperlukan.</p></div>
+      <div class="form-grid">
+        <div class="field-card toggle-card"><label class="switch"><input id="remove-duplicates" type="checkbox" checked><span></span>Hapus duplikat</label></div>
+        <div class="field-card toggle-card"><label class="switch"><input id="run-noise-filter" type="checkbox" checked><span></span>SOR noise filter</label></div>
+        <div class="field-card"><label>SOR k</label><input id="sor-k" type="number" min="1" value="10"></div>
+        <div class="field-card"><label>SOR m</label><input id="sor-m" type="number" step="0.1" value="3"></div>
+        <div class="field-card"><label>Fallback EPSG</label><input id="fallback-epsg" type="number" value="0"><small>0 = wajib membaca CRS dari LAS. Isi hanya bila CRS LAS kosong dan EPSG proyek diketahui.</small></div>
+        <div class="field-card"><label>CPU threads</label><input id="threads" type="number" min="1" value="6"></div>
+        <div class="field-card"><label>CSF cloth resolution (m)</label><input id="csf-cloth-resolution" type="number" step="0.1" value="0.5"></div>
+        <div class="field-card"><label>CSF class threshold (m)</label><input id="csf-class-threshold" type="number" step="0.05" value="0.3"></div>
+        <div class="field-card"><label>CSF rigidness</label><select id="csf-rigidness"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div>
+        <div class="field-card"><label>DTM resolution (m)</label><input id="dtm-resolution" type="number" step="0.1" value="0.5"></div>
+      </div>
+
+      <div class="section-title"><div><span>TERRAIN HOLD-OUT QC</span><h3>Noise floor minimum</h3></div><p>NMAD terrain dua periode digabung untuk membentuk T_TERRAIN.</p></div>
+      <div class="form-grid">
+        <div class="field-card"><label>Train fraction</label><input id="holdout-train-frac" type="number" min="0.1" max="0.95" step="0.05" value="0.80"></div>
+        <div class="field-card"><label>Random seed</label><input id="holdout-seed" type="number" value="42"></div>
+        <div class="field-card"><label>Minimum ground points</label><input id="holdout-min-ground" type="number" min="20" value="100"></div>
+        <div class="field-card"><label>Max ground sample</label><input id="holdout-max-ground" type="number" min="0" step="1000" value="200000"><small>0 = gunakan seluruh ground. Nilai positif hanya guard performa.</small></div>
+      </div>
+
+      <div class="section-title"><div><span>TREE METRICS</span><h3>P95, support, dan delta multi-metrik</h3></div></div>
+      <div class="form-grid">
+        <div class="field-card"><label>Buffer radius (m)</label><input id="buffer-radius" type="number" step="0.1" value="2.0"></div>
+        <div class="field-card"><label>Minimum vegetation height (m)</label><input id="min-veg-h" type="number" step="0.05" value="0.30"></div>
+        <div class="field-card"><label>Minimum normalized Z (m)</label><input id="min-normalized-z" type="number" step="0.05" value="-0.10"></div>
+        <div class="field-card"><label>Metrics chunk size</label><input id="metrics-chunk-size" type="number" min="10" value="250"><small>Chunking menjaga proses tetap responsif dan live log terus bergerak.</small></div>
+      </div>
+
+      <div class="section-title"><div><span>OUTPUT OPTIONAL</span><h3>nCHM dan arsip</h3></div></div>
+      <div class="form-grid">
+        <div class="field-card toggle-card"><label class="switch"><input id="create-nchm" type="checkbox" checked><span></span>Buat nCHM untuk visual/QC</label></div>
+        <div class="field-card toggle-card"><label class="switch"><input id="create-qc-plots" type="checkbox" checked><span></span>Buat QC plots</label></div>
+        <div class="field-card toggle-card"><label class="switch"><input id="save-normalized-laz" type="checkbox" checked><span></span>Simpan normalized LAZ</label></div>
+        <div class="field-card"><label>nCHM resolution (m)</label><input id="chm-resolution" type="number" step="0.05" value="0.10"></div>
+      </div>
+    </section>
+
+    <section id="process-page" class="page">
+      <div class="process-layout">
+        <div class="progress-panel">
+          <div class="progress-head"><div><span class="eyebrow">PROCESS</span><h3 id="stage-label">Belum berjalan</h3></div><strong id="progress-number">0%</strong></div>
+          <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+          <div id="run-dir-line" class="run-dir-line"></div>
+
+          <div class="live-health">
+            <div><span>Process</span><strong id="live-process-state">IDLE</strong></div>
+            <div><span>Elapsed</span><strong id="elapsed-time">00:00:00</strong></div>
+            <div><span>Last output</span><strong id="last-activity">-</strong></div>
+          </div>
+
+          <div id="stage-list" class="stage-list">
+            <div data-stage="validation"><i></i>Validasi input</div>
+            <div data-stage="load"><i></i>Load dua LAS</div>
+            <div data-stage="qc"><i></i>QC point cloud</div>
+            <div data-stage="registration"><i></i>Registration audit</div>
+            <div data-stage="ground"><i></i>Ground & DTM</div>
+            <div data-stage="terrain_qc"><i></i>Terrain hold-out QC</div>
+            <div data-stage="normalize"><i></i>Normalisasi tinggi</div>
+            <div data-stage="metrics_prev"><i></i>Metrics P(t−1)</div>
+            <div data-stage="metrics_curr"><i></i>Metrics P(t)</div>
+            <div data-stage="delta"><i></i>Delta multi-metrik</div>
+            <div data-stage="uncertainty"><i></i>T_TECH</div>
+            <div data-stage="peer"><i></i>Peer residual limits</div>
+            <div data-stage="decision"><i></i>Decision logic</div>
+            <div data-stage="zone"><i></i>Residual zone</div>
+            <div data-stage="export"><i></i>Export & report</div>
+            <div data-stage="complete"><i></i>Selesai</div>
+          </div>
+          <button id="cancel-btn" class="danger full" disabled>Batalkan Proses</button>
+        </div>
+
+        <div class="log-panel">
+          <div class="log-toolbar">
+            <div><span class="eyebrow">LIVE PROCESS LOG</span><h3>Output backend R real-time</h3></div>
+            <div class="log-actions">
+              <label class="mini-check"><input id="auto-scroll-log" type="checkbox" checked> Auto-scroll</label>
+              <button id="copy-log-btn" class="ghost">Copy</button>
+              <button id="clear-log-btn" class="ghost">Clear view</button>
+            </div>
+          </div>
+          <div class="log-hint">Heartbeat tetap berjalan saat R sedang menghitung fungsi berat. Jika <b>Last output</b> terus naik, proses masih hidup tetapi backend belum mengeluarkan baris baru.</div>
+          <pre id="log-output">Belum ada proses.</pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="result-page" class="page">
+      <div id="empty-result" class="empty-state"><div class="empty-icon">R</div><h3>Belum ada hasil</h3><p>Jalankan pair analysis untuk melihat residual confidence dan output GIS.</p></div>
+      <div id="result-content" class="result-content hidden">
+        <div class="result-header"><div><span class="eyebrow">ROLLING PAIR RESULT</span><h3>Ringkasan analisis</h3></div><div class="result-actions"><button id="open-output-btn" class="secondary">Buka Folder Output</button><button id="open-report-btn" class="primary">Buka Report</button></div></div>
+        <div id="metric-grid" class="metric-grid"></div>
+        <div class="result-block"><div class="block-title"><h3>Distribusi status</h3></div><div id="status-grid" class="status-grid"></div></div>
+        <div class="result-block"><div class="block-title"><h3>Preview TREE_ID</h3></div><div class="table-wrap"><table id="preview-table"></table></div></div>
+        <div class="result-block"><div class="block-title"><h3>Output files</h3></div><div id="output-list" class="output-list"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

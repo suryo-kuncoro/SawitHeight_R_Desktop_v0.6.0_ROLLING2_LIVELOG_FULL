@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tutorial MAS POPO — Rolling 2-Period & Residual Confidence v0.6.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-deep:#0B0F11;
+  --bg-panel:#12181B;
+  --bg-panel-2:#171F22;
+  --bg-code:#0D1315;
+  --border:#263135;
+  --border-soft:#1C2528;
+  --text-primary:#E7EDEE;
+  --text-secondary:#8FA0A4;
+  --text-muted:#546366;
+  --accent:#E3A73F;
+  --accent-dim:#5A4118;
+  --accent-glow:rgba(227,167,63,0.13);
+  --warn-text:#E8C468; --warn-border:#8A6A1E; --warn-bg:#20190E;
+  --danger-text:#E88A82; --danger-border:#8A3A32; --danger-bg:#1F1211;
+  --info-text:#8FC7D6; --info-border:#2E5F6E; --info-bg:#0F1B1E;
+  --success-text:#8FCBA0; --success-border:#2E6E48; --success-bg:#0E1C15;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg-deep);
+  color:var(--text-primary);
+  font-family:'IBM Plex Sans',sans-serif;
+  min-height:100vh;
+  position:relative;
+}
+body::before{
+  content:'';
+  position:fixed; inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cg fill='none' stroke='%23E3A73F' stroke-opacity='0.035' stroke-width='1'%3E%3Cpath d='M-20 40 Q100 10 200 60 T420 30'/%3E%3Cpath d='M-20 90 Q100 60 200 110 T420 80'/%3E%3Cpath d='M-20 140 Q100 110 200 160 T420 130'/%3E%3Cpath d='M-20 190 Q100 160 200 210 T420 180'/%3E%3Cpath d='M-20 240 Q100 210 200 260 T420 230'/%3E%3Cpath d='M-20 290 Q100 260 200 310 T420 280'/%3E%3Cpath d='M-20 340 Q100 310 200 360 T420 330'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:500px 500px;
+  pointer-events:none;
+  z-index:0;
+}
+.wrap{position:relative; z-index:1; display:flex; max-width:1400px; margin:0 auto;}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  width:280px; flex-shrink:0;
+  position:sticky; top:0; height:100vh;
+  border-right:1px solid var(--border);
+  padding:28px 0 28px 0;
+  display:flex; flex-direction:column;
+  overflow-y:auto;
+}
+.brand{padding:0 24px 20px 24px; border-bottom:1px solid var(--border-soft); margin-bottom:8px;}
+.brand-eyebrow{font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.15em; color:var(--accent); text-transform:uppercase;}
+.brand-title{font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600; margin-top:6px; line-height:1.3;}
+.nav-list{display:flex; flex-direction:column; padding:8px 12px; gap:2px; flex:1;}
+.nav-item{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 12px; border-radius:6px;
+  text-decoration:none; color:var(--text-secondary);
+  font-size:13px; transition:background 0.15s, color 0.15s;
+  border-left:2px solid transparent;
+}
+.nav-item:hover{background:var(--bg-panel-2); color:var(--text-primary);}
+.nav-item.active{background:var(--accent-glow); color:var(--accent); border-left:2px solid var(--accent);}
+.nav-code{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-muted); min-width:22px;}
+.nav-item.active .nav-code{color:var(--accent);}
+.nav-label{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.progress-box{padding:16px 24px 0 24px; border-top:1px solid var(--border-soft); margin-top:8px;}
+.progress-label{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-muted); letter-spacing:0.1em; margin-bottom:8px; display:flex; justify-content:space-between;}
+.progress-track{height:4px; background:var(--bg-panel-2); border-radius:2px; overflow:hidden;}
+.progress-fill{height:100%; background:var(--accent); width:0%; transition:width 0.3s;}
+
+/* ===== MAIN ===== */
+.main{flex:1; min-width:0; padding:48px 56px 120px 56px;}
+
+.hero{margin-bottom:56px;}
+.hero-eyebrow{
+  font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.15em;
+  color:var(--accent); text-transform:uppercase; display:flex; align-items:center; gap:8px;
+}
+.hero-eyebrow::before{content:''; width:20px; height:1px; background:var(--accent);}
+.hero h1{
+  font-family:'Space Grotesk',sans-serif; font-weight:700;
+  font-size:42px; line-height:1.15; margin:14px 0 16px 0;
+  max-width:720px;
+}
+.hero-sub{font-size:16px; color:var(--text-secondary); max-width:600px; line-height:1.6; margin-bottom:28px;}
+.readout{display:flex; flex-wrap:wrap; gap:10px;}
+.readout-chip{
+  font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-secondary);
+  border:1px solid var(--border); padding:6px 12px; border-radius:5px;
+  background:var(--bg-panel); display:flex; align-items:center; gap:6px;
+}
+.readout-chip b{color:var(--accent); font-weight:600;}
+
+/* ===== STEP ===== */
+.step{padding-top:36px; margin-top:8px; scroll-margin-top:24px;}
+.step-head{display:flex; align-items:flex-start; gap:18px; margin-bottom:22px;}
+.monument{
+  width:52px; height:52px; border-radius:50%;
+  border:2px solid var(--accent);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; position:relative;
+  background:var(--accent-glow);
+}
+.monument::before, .monument::after{
+  content:''; position:absolute; background:var(--accent);
+}
+.monument::before{width:8px; height:1px; top:50%; left:-11px;}
+.monument::after{width:8px; height:1px; top:50%; right:-11px;}
+.monument span{font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; color:var(--accent);}
+.step-title-wrap{flex:1; padding-top:4px;}
+.step-title-wrap h2{font-family:'Space Grotesk',sans-serif; font-size:23px; font-weight:600;}
+.step-blurb{color:var(--text-secondary); font-size:14px; margin-top:4px;}
+.done-toggle{
+  display:flex; align-items:center; gap:6px; padding-top:8px;
+  font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-muted);
+  cursor:pointer; user-select:none; letter-spacing:0.05em; text-transform:uppercase;
+}
+.done-toggle input{accent-color:var(--accent); width:14px; height:14px; cursor:pointer;}
+.step.is-done .step-title-wrap h2{color:var(--text-secondary); text-decoration:line-through; text-decoration-color:var(--border);}
+.step.is-done .monument{background:var(--accent); }
+.step.is-done .monument span{color:var(--bg-deep);}
+
+.step-body{padding-left:70px; border-left:1px solid var(--border-soft); margin-left:26px; padding-bottom:8px;}
+.body-text{color:var(--text-secondary); font-size:14.5px; line-height:1.75; margin-bottom:16px; max-width:680px;}
+.sub-head{font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600; margin:24px 0 10px 0; color:var(--text-primary);}
+
+.code-block{
+  background:var(--bg-code); border:1px solid var(--border);
+  border-radius:8px; overflow:hidden; margin-bottom:18px; max-width:720px;
+}
+.code-bar{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 14px; border-bottom:1px solid var(--border);
+  font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em;
+  color:var(--text-muted);
+}
+.copy-btn{
+  background:transparent; border:1px solid var(--border); color:var(--text-secondary);
+  font-family:'IBM Plex Mono',monospace; font-size:10px; padding:3px 9px; border-radius:4px;
+  cursor:pointer; letter-spacing:0.05em; transition:all 0.15s;
+}
+.copy-btn:hover{border-color:var(--accent); color:var(--accent);}
+.copy-btn.copied{border-color:var(--success-text); color:var(--success-text);}
+.code-block pre{padding:14px 16px; overflow-x:auto;}
+.code-block code{
+  font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.7;
+  color:#C9D4D6; white-space:pre;
+}
+
+.callout{
+  border-radius:8px; padding:14px 16px; margin-bottom:18px; max-width:680px;
+  border-left:3px solid; font-size:13.5px; line-height:1.65;
+}
+.callout-head{
+  display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px;
+  font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.05em; text-transform:uppercase;
+}
+.callout-icon{font-size:11px;}
+.callout-text{color:var(--text-secondary);}
+.callout-info{background:var(--info-bg); border-color:var(--info-border);}
+.callout-info .callout-head{color:var(--info-text);}
+.callout-warn{background:var(--warn-bg); border-color:var(--warn-border);}
+.callout-warn .callout-head{color:var(--warn-text);}
+.callout-danger{background:var(--danger-bg); border-color:var(--danger-border);}
+.callout-danger .callout-head{color:var(--danger-text);}
+.callout-success{background:var(--success-bg); border-color:var(--success-border);}
+.callout-success .callout-head{color:var(--success-text);}
+
+
+.data-table{
+  width:100%; max-width:760px; border-collapse:collapse;
+  margin:12px 0 20px 0; font-size:13px;
+  background:var(--bg-panel);
+  border:1px solid var(--border);
+  border-radius:8px; overflow:hidden;
+}
+.data-table th,.data-table td{
+  border-bottom:1px solid var(--border-soft);
+  padding:10px 12px; text-align:left; vertical-align:top;
+}
+.data-table th{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px; letter-spacing:0.06em;
+  color:var(--accent); text-transform:uppercase;
+  background:var(--bg-panel-2);
+}
+.data-table td{color:var(--text-secondary);}
+.data-table tr:last-child td{border-bottom:none;}
+.inline-code{
+  font-family:'IBM Plex Mono',monospace; font-size:12px;
+  color:var(--accent); background:var(--bg-code);
+  border:1px solid var(--border); padding:1px 5px; border-radius:4px;
+}
+
+.footer-note{
+  margin-top:60px; padding-top:24px; border-top:1px solid var(--border-soft);
+  font-size:12.5px; color:var(--text-muted); max-width:680px; line-height:1.7;
+}
+
+@media (max-width:900px){
+  .sidebar{display:none;}
+  .main{padding:32px 20px 100px 20px;}
+  .hero h1{font-size:30px;}
+  .step-body{padding-left:0; margin-left:0; border-left:none;}
+  .step-head{flex-wrap:wrap;}
+}
+</style>
+
+<style>
+.eq{
+  font-family:'IBM Plex Mono',monospace;
+  color:#E7EDEE;
+  background:#0D1315;
+  border:1px solid #263135;
+  border-radius:8px;
+  padding:12px 16px;
+  margin:10px 0 18px 0;
+  max-width:720px;
+  overflow-x:auto;
+}
+.kicker{
+  display:inline-block;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:3px 8px;
+  color:var(--accent);
+  margin-right:5px;
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-eyebrow">MAS POPO · SfM-MVS</div>
+    <div class="brand-title">Rolling 2-Period Monitoring & Residual Zone</div>
+  </div>
+  <div class="nav-list">
+    <a href="#stpre" class="nav-item" data-target="stpre"><span class="nav-code">PRE</span><span class="nav-label">Instalasi lidR — R 4.2.2</span></a>
+<a href="#st00" class="nav-item" data-target="st00"><span class="nav-code">00</span><span class="nav-label">Persiapan Environment R</span></a>
+<a href="#st00b" class="nav-item" data-target="st00b"><span class="nav-code">00B</span><span class="nav-label">Rolling 2-Period & Master Opsional</span></a>
+<a href="#st01" class="nav-item" data-target="st01"><span class="nav-code">01</span><span class="nav-label">Load Dua Periode</span></a>
+<a href="#st02" class="nav-item" data-target="st02"><span class="nav-code">02</span><span class="nav-label">QC Point Cloud</span></a>
+<a href="#st03" class="nav-item" data-target="st03"><span class="nav-code">03</span><span class="nav-label">Spatial Registration QC</span></a>
+<a href="#st04" class="nav-item" data-target="st04"><span class="nav-code">04</span><span class="nav-label">Ground & DTM per Periode</span></a>
+<a href="#st05" class="nav-item" data-target="st05"><span class="nav-code">05</span><span class="nav-label">Terrain QC & Noise Floor</span></a>
+<a href="#st06" class="nav-item" data-target="st06"><span class="nav-code">06</span><span class="nav-label">Normalisasi Tinggi</span></a>
+<a href="#st07" class="nav-item" data-target="st07"><span class="nav-code">07</span><span class="nav-label">Buffer 2 m & P95</span></a>
+<a href="#st08" class="nav-item" data-target="st08"><span class="nav-code">08</span><span class="nav-label">Delta & Technical Uncertainty</span></a>
+<a href="#st09" class="nav-item" data-target="st09"><span class="nav-code">09</span><span class="nav-label">Threshold Residual</span></a>
+<a href="#st10" class="nav-item" data-target="st10"><span class="nav-code">10</span><span class="nav-label">Residual Zone Polygon</span></a>
+<a href="#st11" class="nav-item" data-target="st11"><span class="nav-code">11</span><span class="nav-label">Arsip & Rolling</span></a>
+<a href="#st12" class="nav-item" data-target="st12"><span class="nav-code">12</span><span class="nav-label">Checklist Final</span></a>
+  </div>
+  <div class="progress-box">
+    <div class="progress-label"><span>PROGRES</span><span id="progress-count">0/15</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="hero">
+    <div class="hero-eyebrow">v0.6.0 · Rolling Pair · Relative Height</div>
+    <h1>Monitoring Pertumbuhan Sawit TBM dari Dua Periode Terakhir</h1>
+    <p class="hero-sub">Panduan lengkap R/lidR untuk menghitung tinggi relatif P95 pada buffer 2 m, membandingkan dua periode berurutan, membedakan perubahan nyata dari noise point cloud, dan menghasilkan residual zone secara konservatif tanpa threshold agronomi buatan.</p>
+    <div class="readout">
+      <div class="readout-chip">ANALISIS <b>P(t-1) + P(t)</b></div>
+      <div class="readout-chip">TINGGI <b>P95 RELATIF</b></div>
+      <div class="readout-chip">BUFFER <b>2 m</b></div>
+      <div class="readout-chip">MASTER <b>OPSIONAL</b></div>
+      <div class="readout-chip">RESIDUAL <b>QC + MULTI-METRIK</b></div>
+      <div class="readout-chip">R <b>4.2.2</b></div>
+    </div>
+  </div>
+
+  <section class="step" data-idx="0" id="stpre">
+<div class="step-head">
+<div class="monument"><span>PRE</span></div>
+<div class="step-title-wrap">
+<h2>Tutorial Instalasi Paket lidR pada R 4.2.2 di RStudio Windows</h2>
+<p class="step-blurb">Metode arsip manual untuk instalasi lidR pada rumpun R 4.2.x.</p>
+</div>
+<label class="done-toggle">
+<input onchange="toggleDone('stpre', this)" type="checkbox"/>
+<span>selesai</span>
+</label>
+</div>
+<div class="step-body">
+<p class="body-text">Proses instalasi paket pemrosesan LiDAR (lidR) pada R versi spesifik/lawas (seperti rumpun 4.2.x) sering kali gagal karena masalah kompatibilitas compiler C++ dan hilangnya file biner online di server CRAN utama. Tutorial ini menggunakan metode Arsip Manual yang terbukti sukses 100%.</p>
+<h4 class="sub-head">1. Ringkasan Alur Kerja</h4>
+<div class="callout callout-info">
+<div class="callout-head"><span class="callout-icon">◆</span>Alur kerja</div>
+<div class="callout-text">
+            • Instalasi Rtools42 (Penghubung sistem Windows).<br/>
+            • Unduh file biner .zip versi stabil yang cocok.<br/>
+            • Instalasi mandiri secara lokal di RStudio.
+          </div>
+</div>
+<h4 class="sub-head">2. Langkah-Langkah Detil</h4>
+<h4 class="sub-head">Langkah 1: Mengunduh dan Menginstal Rtools 42</h4>
+<p class="body-text">Paket spasial tingkat tinggi seperti lidR membutuhkan compiler eksternal agar bisa berjalan di sistem operasi Windows. Karena Anda menggunakan R versi 4.2.x, Anda wajib menggunakan Rtools versi 42.</p>
+<div class="callout callout-info">
+<div class="callout-head"><span class="callout-icon">◆</span>Rtools42</div>
+<div class="callout-text">
+            • Buka browser Anda dan unduh installer resmi Rtools 42 melalui tautan berikut:<br/>
+<a href="https://cran.r-project.org/bin/windows/Rtools/rtools42/rtools42.html" rel="noopener noreferrer" style="color:var(--info-text);" target="_blank">https://cran.r-project.org/bin/windows/Rtools/rtools42/rtools42.html</a><br/><br/>
+            • Jalankan file .exe yang sudah diunduh dan ikuti instruksi instalasi standar (Next -&gt; Next -&gt; Finish). Biarkan folder instalasi tetap di direktori bawaan (<code>C:\rtools42</code>).<br/><br/>
+            • <b>PENTING:</b> Jika RStudio Anda sedang terbuka, tutup dan buka kembali (Restart) RStudio agar sistem mengenali path Rtools yang baru dipasang.
+          </div>
+</div>
+<h4 class="sub-head">Langkah 2: Mengunduh File Biner Paket Spasial (.zip)</h4>
+<p class="body-text">Karena server CRAN online sudah memotong indeks biner langsung untuk R 4.2 melalui perintah otomatis, kita harus mengunduhnya secara manual dari server arsip resmi CRAN. Unduh kedua file di bawah ini lewat browser Anda (Simpan di folder Downloads, dan JANGAN diekstrak):</p>
+<div class="callout callout-info">
+<div class="callout-head"><span class="callout-icon">◆</span>File binary yang diunduh</div>
+<div class="callout-text">
+            • Unduh Paket rlas (Versi 1.6.0):<br/>
+<a href="https://cran.r-project.org/bin/windows/contrib/4.2/rlas_1.6.0.zip" rel="noopener noreferrer" style="color:var(--info-text);" target="_blank">https://cran.r-project.org/bin/windows/contrib/4.2/rlas_1.6.0.zip</a><br/><br/>
+            • Unduh Paket lidR (Versi 4.0.1/4.1.1):<br/>
+<a href="https://cran.r-project.org/bin/windows/contrib/4.2/lidR_4.0.1.zip" rel="noopener noreferrer" style="color:var(--info-text);" target="_blank">https://cran.r-project.org/bin/windows/contrib/4.2/lidR_4.0.1.zip</a>
+</div>
+</div>
+<h4 class="sub-head">Langkah 3: Proses Eksekusi Instalasi di RStudio</h4>
+<p class="body-text">Buka RStudio Anda, lalu salin dan jalankan baris perintah di bawah ini secara berurutan pada jendela Console:</p>
+<h4 class="sub-head">A. Kembalikan Repositori ke Mode Global (Default)</h4>
+<div class="code-block">
+<div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+<pre><code>options(repos = c(CRAN = "https://cloud.r-project.org/"))</code></pre>
+</div>
+<h4 class="sub-head">B. Instalasi Paket rlas dari File Lokal</h4>
+<div class="code-block">
+<div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+<pre><code>install.packages("C:/Users/18000667/Downloads/rlas_1.6.0.zip", repos = NULL, type = "win.binary")</code></pre>
+</div>
+<h4 class="sub-head">C. Instalasi Paket lidR dari File Lokal</h4>
+<div class="code-block">
+<div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+<pre><code>install.packages("C:/Users/18000667/Downloads/lidR_4.0.1.zip", repos = NULL, type = "win.binary")</code></pre>
+</div>
+<h4 class="sub-head">Langkah 4: Verifikasi Sukses</h4>
+<p class="body-text">Untuk memastikan seluruh fungsi pemrosesan point cloud sudah siap digunakan, panggil library tersebut menggunakan perintah:</p>
+<div class="code-block">
+<div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+<pre><code>library(lidR)</code></pre>
+</div>
+<p class="body-text">Ciri-Ciri Instalasi Berhasil: Konsol akan menampilkan pesan sambutan seperti di bawah ini tanpa ada pesan Error:</p>
+<div class="code-block">
+<div class="code-bar"><span>CONSOLE OUTPUT</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+<pre><code>lidR 4.1.1 using 6 threads. Help on &lt;gis.stackexchange.com&gt;.
+Warning message:
+package 'lidR' was built under R version 4.2.3</code></pre>
+</div>
+</div>
+</section>
+  <section class="step" data-idx="1" id="st00">
+<div class="step-head">
+<div class="monument"><span>00</span></div>
+<div class="step-title-wrap">
+<h2>Persiapan Environment R</h2>
+<p class="step-blurb">Install &amp; load package, atur folder kerja.</p>
+</div>
+<label class="done-toggle">
+<input onchange="toggleDone('st00', this)" type="checkbox"/>
+<span>selesai</span>
+</label>
+</div>
+<div class="step-body">
+<p class="body-text">Buka RStudio. Semua kode berikut diketik di panel Console (area dengan tanda "&gt;"), lalu tekan Enter.</p>
+<h4 class="sub-head">Install package</h4>
+<div class="code-block">
+<div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+<pre><code>install.packages("lidR")
+install.packages("terra")
+install.packages("sf")
+install.packages("tidyverse")
+install.packages("RCSF")</code></pre>
+</div>
+<div class="callout callout-warn">
+<div class="callout-head"><span class="callout-icon">▲</span>Catatan instalasi</div>
+<div class="callout-text">Jika muncul "Do you want to install from sources..." ketik no lalu Enter. Pesan kuning (warning) normal — hanya pesan merah "Error" yang berarti masalah.</div>
+</div>
+<h4 class="sub-head">Load package</h4>
+<div class="code-block">
+<div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+<pre><code>library(lidR)
+library(terra)
+library(sf)
+library(tidyverse)
+library(RCSF)</code></pre>
+</div>
+<h4 class="sub-head">Set working directory</h4>
+<div class="code-block">
+<div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+<pre><code>setwd("C:/Project/SawitMuda/Analysis")
+dir.create("output", showWarnings = FALSE)</code></pre>
+</div>
+</div>
+</section>
+  
+<section class="step" id="st00b" data-idx="2">
+  <div class="step-head">
+    <div class="monument"><span>00B</span></div>
+    <div class="step-title-wrap">
+      <h2>Desain Rolling 2-Period & Master Opsional</h2>
+      <p class="step-blurb">Residual terbaru cukup memakai dua periode terakhir; master full PPK/GCP dapat berada di periode mana pun.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st00b', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+
+<div class="callout callout-success">
+  <div class="callout-head"><span class="callout-icon">✓</span>Perubahan desain v0.6.0</div>
+  <div class="callout-text">Analisis operasional <b>residual zone memakai rolling 2-period</b>: hanya periode sebelumnya <span class="inline-code">P(t-1)</span> dan periode terbaru <span class="inline-code">P(t)</span> yang dihitung ulang. Histori lama tetap diarsipkan, tetapi tidak perlu dibaca ulang setiap kali ada periode baru.</div>
+</div>
+
+<h4 class="sub-head">00B.1 — Pisahkan tiga konsep</h4>
+<table class="data-table"><thead><tr><th>Konsep</th><th>Fungsi</th><th>Apakah wajib?</th></tr></thead><tbody><tr><td><b>Rolling analysis pair</b></td><td>Dua periode berurutan yang sedang dianalisis, mis. P4 → P5.</td><td>Ya, untuk residual zone terbaru.</td></tr><tr><td><b>Master registration</b></td><td>Periode dengan georeferensi terbaik (full PPK / GCP lengkap) sebagai reference frame XYZ.</td><td>Opsional; sangat berguna untuk konsistensi spatial jangka panjang.</td></tr><tr><td><b>Common terrain reference</b></td><td>Satu DTM yang dipakai untuk semua periode.</td><td>Tidak wajib. Untuk tinggi relatif, DTM per periode boleh digunakan selama normalisasi masing-masing valid.</td></tr></tbody></table>
+
+
+<div class="callout callout-info">
+  <div class="callout-head"><span class="callout-icon">◆</span>Koreksi konsep penting</div>
+  <div class="callout-text">Untuk <b>tinggi relatif</b>, offset vertikal absolut yang seragam pada satu periode akan banyak <b>tereliminasi</b> saat menghitung <span class="inline-code">Zpoint − Zground</span> dari periode yang sama. Karena itu common DTM bukan syarat mutlak. Yang lebih kritis adalah kualitas DTM lokal, kecocokan XY terhadap TREE_ID, dan konsistensi rekonstruksi tajuk.</div>
+</div>
+
+<h4 class="sub-head">00B.2 — Konfigurasi jumlah periode fleksibel</h4>
+<p class="body-text">Jumlah histori boleh P1, P2, P3, …, Pn. Untuk proses terbaru, cukup tunjuk dua periode berurutan. Periode dengan full PPK dapat berada di P2, P3, P4, atau periode mana pun.</p>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>periods &lt;- data.frame(
+  period = c(&quot;P1&quot;,&quot;P2&quot;,&quot;P3&quot;,&quot;P4&quot;,&quot;P5&quot;),
+  date = as.Date(c(
+    &quot;2024-01-15&quot;,&quot;2024-07-15&quot;,&quot;2025-01-15&quot;,
+    &quot;2025-07-15&quot;,&quot;2026-01-15&quot;
+  )),
+  las_file = c(
+    &quot;data/P1.laz&quot;,&quot;data/P2.laz&quot;,&quot;data/P3_fullPPK.laz&quot;,
+    &quot;data/P4.laz&quot;,&quot;data/P5.laz&quot;
+  ),
+  positioning = c(
+    &quot;NON_PPK&quot;,&quot;PPK_PARTIAL&quot;,&quot;PPK_FULL&quot;,&quot;PPK&quot;,&quot;PPK&quot;
+  ),
+  stringsAsFactors = FALSE
+)
+
+periods &lt;- periods[order(periods$date), ]
+
+# Residual zone terbaru:
+PREV_PERIOD &lt;- &quot;P4&quot;
+CURR_PERIOD &lt;- &quot;P5&quot;
+
+# Master global opsional:
+MASTER_PERIOD &lt;- &quot;P3&quot;   # full PPK / GCP terbaik</code></pre>
+</div>
+
+<h4 class="sub-head">00B.3 — Aturan rolling</h4>
+<pre style="font-family:'IBM Plex Mono',monospace;line-height:1.8;color:#C9D4D6;background:#0D1315;border:1px solid #263135;border-radius:8px;padding:14px 16px;max-width:720px;overflow:auto">
+Histori:     P1 ── P2 ── P3 ── P4 ── P5 ── P6 ...
+
+Analisis P5:                    [ P4 + P5 ]
+Analisis P6:                              [ P5 + P6 ]
+
+Master global opsional: P3 (full PPK)
+P4 dan P5 cukup sudah berada / dicek terhadap frame P3.
+Tidak perlu memproses ulang P1 dan P2 untuk residual P5.
+</pre>
+
+
+<div class="callout callout-warn">
+  <div class="callout-head"><span class="callout-icon">▲</span>Jangan chain registration tanpa kontrol</div>
+  <div class="callout-text">Jika master global P3 sudah ditetapkan, periode baru sebaiknya disejajarkan/di-QC terhadap reference frame P3 atau kontrol stabil yang sama. Hindari akumulasi transformasi P3→P4→P5→P6 bila error tiap tahap tidak diketahui.</div>
+</div>
+
+  </div>
+</section>
+
+<section class="step" id="st01" data-idx="3">
+  <div class="step-head">
+    <div class="monument"><span>01</span></div>
+    <div class="step-title-wrap">
+      <h2>Load Dua Periode Terakhir</h2>
+      <p class="step-blurb">Input utama adalah P(t-1), P(t), dan TREE_ID permanen.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st01', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+<p class="body-text">Muat hanya dua LAS/LAZ yang akan dianalisis pada siklus sekarang. File historis lain tidak diperlukan untuk menghitung residual zone terbaru.</p>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>library(lidR)
+library(sf)
+library(terra)
+library(dplyr)
+
+prev_row &lt;- periods[periods$period == PREV_PERIOD, ]
+curr_row &lt;- periods[periods$period == CURR_PERIOD, ]
+
+las_prev &lt;- readLAS(prev_row$las_file)
+las_curr &lt;- readLAS(curr_row$las_file)
+
+stopifnot(!is.empty(las_prev))
+stopifnot(!is.empty(las_curr))
+
+st_crs(las_prev)
+st_crs(las_curr)</code></pre>
+</div>
+
+<h4 class="sub-head">01.1 — TREE_ID permanen</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>trees &lt;- st_read(&quot;data/titik_pokok_sawit.shp&quot;)
+
+ID_FIELD &lt;- &quot;TREE_ID&quot;
+stopifnot(ID_FIELD %in% names(trees))
+stopifnot(!anyDuplicated(trees[[ID_FIELD]]))
+
+trees$tree_id &lt;- as.character(trees[[ID_FIELD]])</code></pre>
+</div>
+
+
+<div class="callout callout-danger">
+  <div class="callout-head"><span class="callout-icon">✕</span>Syarat planimetris</div>
+  <div class="callout-text">Buffer 2 m hanya valid bila posisi TREE_ID dan kedua point cloud berada pada reference frame horizontal yang sama. Pergeseran XY dapat membuat buffer mengambil bagian tajuk yang berbeda walaupun tinggi relatif sudah dinormalisasi.</div>
+</div>
+
+  </div>
+</section>
+
+<section class="step" id="st02" data-idx="4">
+  <div class="step-head">
+    <div class="monument"><span>02</span></div>
+    <div class="step-title-wrap">
+      <h2>QC Point Cloud P(t-1) & P(t)</h2>
+      <p class="step-blurb">Bersihkan dan validasi dua dataset sebelum analisis tinggi.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st02', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+<p class="body-text">QC dilakukan secara independen pada kedua periode. Jangan menyamakan densitas dengan GSD foto; dense cloud SfM mempunyai density yang dipengaruhi overlap, tekstur, viewing geometry, dan rekonstruksi.</p>
+
+<h4 class="sub-head">02.1 — Duplikat, noise, dan densitas</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>qc_las &lt;- function(las) {
+  las &lt;- filter_duplicates(las)
+
+  las &lt;- tryCatch({
+    tmp &lt;- classify_noise(las, sor(k = 10, m = 3))
+    filter_poi(tmp, Classification != 18L)
+  }, error = function(e) las)
+
+  dens &lt;- rasterize_density(las, res = 1)
+
+  list(
+    las = las,
+    density = dens,
+    avg_density = as.numeric(
+      terra::global(dens, &quot;mean&quot;, na.rm = TRUE)[1,1]
+    )
+  )
+}
+
+qc_prev &lt;- qc_las(las_prev)
+qc_curr &lt;- qc_las(las_curr)
+
+las_prev &lt;- qc_prev$las
+las_curr &lt;- qc_curr$las
+
+cat(&quot;Density prev:&quot;, qc_prev$avg_density, &quot;pts/m2\n&quot;)
+cat(&quot;Density curr:&quot;, qc_curr$avg_density, &quot;pts/m2\n&quot;)</code></pre>
+</div>
+
+<h4 class="sub-head">02.2 — Cek CRS</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>if (is.na(st_crs(las_prev)) || is.na(st_crs(las_curr))) {
+  stop(&quot;CRS salah satu LAS kosong.&quot;)
+}
+
+if (!identical(st_crs(las_prev)$wkt, st_crs(las_curr)$wkt)) {
+  stop(&quot;CRS dua LAS berbeda. Samakan CRS terlebih dahulu.&quot;)
+}
+
+if (isTRUE(st_is_longlat(st_crs(las_prev)))) {
+  stop(&quot;Gunakan CRS proyeksi meter sebelum buffer 2 m.&quot;)
+}</code></pre>
+</div>
+
+
+<div class="callout callout-info">
+  <div class="callout-head"><span class="callout-icon">◆</span>PPK full tidak menghapus kebutuhan QC</div>
+  <div class="callout-text">Periode full PPK adalah kandidat reference yang kuat, tetapi tetap periksa CRS, datum vertikal, coverage, density, dan kesesuaian objek stabil. PPK memperkuat absolute positioning; ia bukan jaminan bahwa dense cloud bebas deformasi lokal.</div>
+</div>
+
+  </div>
+</section>
+
+<section class="step" id="st03" data-idx="5">
+  <div class="step-head">
+    <div class="monument"><span>03</span></div>
+    <div class="step-title-wrap">
+      <h2>Spatial Registration QC — Opsional tetapi Terkontrol</h2>
+      <p class="step-blurb">Full PPK/GCP terbaik dapat menjadi reference; transformasi hanya bila memang diperlukan.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st03', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+
+<div class="callout callout-success">
+  <div class="callout-head"><span class="callout-icon">✓</span>Prinsip untuk tinggi relatif</div>
+  <div class="callout-text">Jika kedua periode sudah mempunyai planimetri yang baik terhadap TREE_ID, <b>jangan memaksakan ICP/transformasi tambahan</b>. Untuk analisis relatif, registrasi berlebihan dapat memasukkan bias baru. Lakukan transformasi hanya jika QC menunjukkan offset atau deformasi yang nyata.</div>
+</div>
+
+<h4 class="sub-head">03.1 — Pilih reference untuk QC spatial</h4>
+<p class="body-text">Jika periode terbaru adalah full PPK/GCP terbaik, periode itu boleh menjadi reference lokal. Jika sudah ada master global (mis. P3 full PPK), gunakan master tersebut sebagai audit frame; periode lama tidak harus dihitung ulang.</p>
+
+<pre style="font-family:'IBM Plex Mono',monospace;line-height:1.8;color:#C9D4D6;background:#0D1315;border:1px solid #263135;border-radius:8px;padding:14px 16px;max-width:720px;overflow:auto">
+Kasus A — P(t) paling baik:
+P(t-1)  → QC / align → P(t)
+
+Kasus B — sudah ada master global P3:
+P(t-1)_registered ┐
+                  ├── keduanya sudah berada di frame P3
+P(t)_new → P3 ────┘
+</pre>
+
+<h4 class="sub-head">03.2 — Gunakan stable features</h4>
+<p class="body-text">Evaluasi alignment memakai jalan, bare ground stabil, bangunan permanen, struktur beton, atau area lain yang tidak berubah. Jangan memakai tajuk sawit untuk fitting transform karena tajuk memang berubah antarsemester.</p>
+
+<table class="data-table"><thead><tr><th>Temuan QC</th><th>Tindakan</th></tr></thead><tbody><tr><td>XY cocok, tidak ada tilt nyata</td><td>Tidak perlu transformasi tambahan.</td></tr><tr><td>Hanya offset Z absolut seragam</td><td>Untuk tinggi relatif, offset ini biasanya hilang setelah normalisasi periode masing-masing; catat untuk QC absolut.</td></tr><tr><td>XY bergeser</td><td>Perbaiki planimetric registration sebelum buffer TREE_ID.</td></tr><tr><td>Ada rotasi/tilt/deformasi blok</td><td>Gunakan rigid/advanced registration pada stable surfaces; validasi ulang setelah transform.</td></tr><tr><td>Tidak yakin</td><td>Jangan lanjut ke interpretasi residual sampai geometry stabil.</td></tr></tbody></table>
+
+
+<div class="callout callout-warn">
+  <div class="callout-head"><span class="callout-icon">▲</span>Tentang ICP</div>
+  <div class="callout-text">R/lidR bukan workflow utama untuk ICP fotogrametri penuh. Bila diperlukan transformasi rigid 3D yang nyata, gunakan workflow registration yang tervalidasi (mis. software fotogrametri/point-cloud dedicated), lalu bawa LAS hasil registered kembali ke R. Tutorial ini tidak memaksakan transformasi yang tidak dapat divalidasi.</div>
+</div>
+
+  </div>
+</section>
+
+<section class="step" id="st04" data-idx="6">
+  <div class="step-head">
+    <div class="monument"><span>04</span></div>
+    <div class="step-title-wrap">
+      <h2>Ground Classification & DTM per Periode</h2>
+      <p class="step-blurb">DTM tidak harus satu file yang sama; yang penting akurat secara lokal.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st04', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+<p class="body-text">Untuk rolling 2-period, setiap periode boleh mempunyai DTM sendiri. Ini bukan masalah selama DTM merepresentasikan terrain lokal dengan baik. Karena TBM masih memiliki celah antartajuk, ground dari SfM relatif lebih mungkin tersedia dibanding sawit dewasa.</p>
+
+<h4 class="sub-head">04.1 — Klasifikasi ground per periode</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>classify_ground_period &lt;- function(las) {
+  classify_ground(
+    las,
+    csf(
+      cloth_resolution = 0.5,
+      class_threshold = 0.3,
+      rigidness = 2
+    )
+  )
+}
+
+g_prev &lt;- classify_ground_period(las_prev)
+g_curr &lt;- classify_ground_period(las_curr)
+
+cat(&quot;Ground prev:&quot;,
+    round(mean(g_prev$Classification == 2L) * 100, 1), &quot;%\n&quot;)
+cat(&quot;Ground curr:&quot;,
+    round(mean(g_curr$Classification == 2L) * 100, 1), &quot;%\n&quot;)</code></pre>
+</div>
+
+<h4 class="sub-head">04.2 — DTM per periode</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>DTM_RES &lt;- 0.5
+
+dtm_prev &lt;- rasterize_terrain(
+  g_prev, res = DTM_RES, algorithm = tin()
+)
+
+dtm_curr &lt;- rasterize_terrain(
+  g_curr, res = DTM_RES, algorithm = tin()
+)
+
+writeRaster(dtm_prev, &quot;output/DTM_prev.tif&quot;, overwrite = TRUE)
+writeRaster(dtm_curr, &quot;output/DTM_curr.tif&quot;, overwrite = TRUE)</code></pre>
+</div>
+
+
+<div class="callout callout-info">
+  <div class="callout-head"><span class="callout-icon">◆</span>Common terrain reference tidak wajib</div>
+  <div class="callout-text">Jika terrain fisik stabil dan tersedia satu DTM yang benar-benar lebih baik, common DTM boleh digunakan. Tetapi <b>jangan memaksakan DTM periode tertentu</b> hanya karena ia full PPK. Untuk tinggi relatif, kualitas terrain lokal lebih penting daripada kesamaan angka elevasi absolut antartanggal.</div>
+</div>
+
+<h4 class="sub-head">04.3 — Jika memakai external DTM</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code># Contoh opsional:
+# dtm_prev &lt;- rast(&quot;reference/DTM_prev_validated.tif&quot;)
+# dtm_curr &lt;- rast(&quot;reference/DTM_curr_validated.tif&quot;)
+
+# Pastikan CRS sama dengan masing-masing LAS
+stopifnot(
+  identical(st_crs(g_prev)$wkt, st_crs(crs(dtm_prev))$wkt),
+  identical(st_crs(g_curr)$wkt, st_crs(crs(dtm_curr))$wkt)
+)</code></pre>
+</div>
+
+  </div>
+</section>
+
+<section class="step" id="st05" data-idx="7">
+  <div class="step-head">
+    <div class="monument"><span>05</span></div>
+    <div class="step-title-wrap">
+      <h2>Validasi Terrain & Noise Floor Minimum</h2>
+      <p class="step-blurb">Gunakan hold-out ground untuk menilai kualitas DTM, bukan sekadar visual.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st05', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+<p class="body-text">Kesalahan terrain lokal langsung masuk ke tinggi relatif. Karena itu DTM harus diuji. Jangan hanya melihat mean ground setelah normalisasi karena titik yang sama dapat ikut membentuk DTM. Lebih baik gunakan <b>hold-out ground validation</b> bila jumlah ground point mencukupi.</p>
+
+<h4 class="sub-head">05.1 — Fungsi validasi terrain dengan hold-out ground</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>terrain_holdout_qc &lt;- function(las_grounded,
+                               dtm_res = 0.5,
+                               train_frac = 0.80,
+                               seed = 42) {
+
+  ground &lt;- filter_ground(las_grounded)
+  if (npoints(ground) &lt; 100) {
+    return(data.frame(
+      n_ground = npoints(ground),
+      rmse = NA_real_,
+      median = NA_real_,
+      nmad = NA_real_,
+      p95_abs = NA_real_
+    ))
+  }
+
+  set.seed(seed)
+  idx &lt;- sample(
+    seq_len(npoints(ground)),
+    size = floor(train_frac * npoints(ground))
+  )
+
+  # Ambil XYZ sebagai data frame
+  gdf &lt;- data.frame(
+    X = ground$X,
+    Y = ground$Y,
+    Z = ground$Z
+  )
+
+  train_xyz &lt;- gdf[idx, ]
+  test_xyz  &lt;- gdf[-idx, ]
+
+  train_las &lt;- LAS(train_xyz)
+  st_crs(train_las) &lt;- st_crs(las_grounded)
+
+  dtm_train &lt;- rasterize_terrain(
+    train_las, res = dtm_res, algorithm = tin()
+  )
+
+  test_vect &lt;- vect(
+    test_xyz,
+    geom = c(&quot;X&quot;,&quot;Y&quot;),
+    crs = crs(dtm_train)
+  )
+
+  zhat &lt;- terra::extract(dtm_train, test_vect)[,2]
+  r &lt;- test_xyz$Z - zhat
+  r &lt;- r[is.finite(r)]
+
+  med &lt;- median(r)
+  r0 &lt;- r - med
+
+  data.frame(
+    n_ground = nrow(gdf),
+    rmse = sqrt(mean(r0^2)),
+    median = med,
+    nmad = 1.4826 * median(abs(r0)),
+    p95_abs = as.numeric(
+      quantile(abs(r0), 0.95, names = FALSE)
+    )
+  )
+}
+
+qc_terrain_prev &lt;- terrain_holdout_qc(g_prev)
+qc_terrain_curr &lt;- terrain_holdout_qc(g_curr)
+
+qc_terrain_prev
+qc_terrain_curr</code></pre>
+</div>
+
+
+<div class="callout callout-warn">
+  <div class="callout-head"><span class="callout-icon">▲</span>Ini mengukur terrain repeatability, bukan seluruh error tajuk</div>
+  <div class="callout-text">Hold-out ground QC memberi estimasi kualitas interpolasi terrain. Ia <b>belum mencakup seluruh ketidakpastian rekonstruksi tajuk SfM</b>. Karena itu jangan memakai angka ini sebagai satu-satunya threshold biologis.</div>
+</div>
+
+<h4 class="sub-head">05.2 — Terrain uncertainty gabungan</h4>
+<p class="body-text">Sebagai batas teknis minimum, dua NMAD terrain dapat digabungkan. Ini hanya <b>noise floor terrain</b>, bukan standar pertumbuhan.</p>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>sigma_prev &lt;- qc_terrain_prev$nmad
+sigma_curr &lt;- qc_terrain_curr$nmad
+
+T_TERRAIN &lt;- sqrt(
+  sigma_prev^2 + sigma_curr^2
+)
+
+cat(&quot;Terrain uncertainty pair:&quot;, T_TERRAIN, &quot;m\n&quot;)</code></pre>
+</div>
+
+<h4 class="sub-head">05.3 — Jika hold-out tidak stabil</h4>
+<p class="body-text">Jika ground point terlalu sedikit, coverage tidak merata, atau TIN menghasilkan area extrapolation besar, tandai periode sebagai terrain-QC rendah. Residual tanaman dari area tersebut harus diperlakukan sebagai technical residual sampai terrain diperbaiki.</p>
+
+  </div>
+</section>
+
+<section class="step" id="st06" data-idx="8">
+  <div class="step-head">
+    <div class="monument"><span>06</span></div>
+    <div class="step-title-wrap">
+      <h2>Normalisasi Tinggi per Periode</h2>
+      <p class="step-blurb">Z normalized = tinggi relatif; inilah data inti untuk metrik pokok.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st06', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+<p class="body-text">Normalisasi dilakukan <b>masing-masing periode terhadap DTM periode tersebut</b>. Nilai Z berubah dari elevasi absolut menjadi tinggi relatif terhadap terrain lokal.</p>
+
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>n_prev &lt;- normalize_height(g_prev, dtm_prev)
+n_curr &lt;- normalize_height(g_curr, dtm_curr)
+
+# Filter negatif ekstrem saja
+n_prev &lt;- filter_poi(n_prev, Z &gt;= -0.10)
+n_curr &lt;- filter_poi(n_curr, Z &gt;= -0.10)
+
+writeLAS(n_prev, &quot;output/PREV_normalized.laz&quot;)
+writeLAS(n_curr, &quot;output/CURR_normalized.laz&quot;)</code></pre>
+</div>
+
+<h4 class="sub-head">06.1 — Makna normalisasi</h4>
+<pre style="font-family:'IBM Plex Mono',monospace;line-height:1.8;color:#C9D4D6;background:#0D1315;border:1px solid #263135;border-radius:8px;padding:14px 16px;max-width:720px;overflow:auto">
+Sebelum:
+Zpoint = elevasi absolut
+
+Sesudah:
+Znorm(X,Y) = Zpoint(X,Y) - Zground(X,Y)
+
+Ground ≈ 0 m
+Canopy = tinggi relatif terhadap tanah
+</pre>
+
+
+<div class="callout callout-success">
+  <div class="callout-head"><span class="callout-icon">✓</span>Mengapa offset absolut bisa hilang</div>
+  <div class="callout-text">Jika seluruh point cloud satu periode bergeser seragam +0,15 m dan DTM dibuat dari point cloud yang sama, tajuk dan ground sama-sama bergeser +0,15 m. Pada pengurangan <span class="inline-code">Zpoint − Zground</span>, offset seragam tersebut akan saling menghilangkan. Yang tetap berbahaya adalah error terrain lokal, XY mismatch, deformasi non-rigid, atau perubahan rekonstruksi tajuk.</div>
+</div>
+
+<h4 class="sub-head">06.2 — nCHM opsional</h4>
+<p class="body-text">nCHM tetap berguna untuk peta tinggi, heatmap, dan visual QC, tetapi bukan sumber utama P95.</p>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>chm_prev &lt;- rasterize_canopy(
+  n_prev, res = 0.10, algorithm = p2r()
+)
+chm_curr &lt;- rasterize_canopy(
+  n_curr, res = 0.10, algorithm = p2r()
+)
+
+writeRaster(chm_prev, &quot;output/nCHM_prev.tif&quot;, overwrite = TRUE)
+writeRaster(chm_curr, &quot;output/nCHM_curr.tif&quot;, overwrite = TRUE)</code></pre>
+</div>
+
+  </div>
+</section>
+
+<section class="step" id="st07" data-idx="9">
+  <div class="step-head">
+    <div class="monument"><span>07</span></div>
+    <div class="step-title-wrap">
+      <h2>Buffer 2 m, P95 & Presence Support</h2>
+      <p class="step-blurb">P95 adalah tinggi utama; point count dan vegetation ratio menjadi QC keberadaan struktur tajuk.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st07', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+<p class="body-text">Setiap TREE_ID memakai fixed circular buffer 2 m. Karena TBM belum saling bersentuhan tajuknya, pendekatan ini sederhana dan cukup aman selama posisi TREE_ID benar.</p>
+
+<h4 class="sub-head">07.1 — Ekstraksi metrik point cloud langsung</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>BUFFER_M &lt;- 2.0
+MIN_VEG_H_M &lt;- 0.30  # filter teknis; bukan batas agronomi
+
+top_mean &lt;- function(z, prop) {
+  z &lt;- sort(z[is.finite(z)], decreasing = TRUE)
+  if (!length(z)) return(NA_real_)
+  n &lt;- max(1L, ceiling(length(z) * prop))
+  mean(z[seq_len(n)])
+}
+
+metrics_one_tree &lt;- function(las, x, y,
+                             radius = 2.0,
+                             min_veg_h = 0.30) {
+
+  clip &lt;- clip_circle(
+    las,
+    xcenter = x,
+    ycenter = y,
+    radius = radius
+  )
+
+  if (is.null(clip) || npoints(clip) == 0L) {
+    return(data.frame(
+      n_all = 0L, n_veg = 0L, veg_ratio = NA_real_,
+      p95 = NA_real_, p99 = NA_real_,
+      top10 = NA_real_, top20 = NA_real_, top30 = NA_real_
+    ))
+  }
+
+  z_all &lt;- clip$Z[is.finite(clip$Z)]
+  z_veg &lt;- z_all[z_all &gt;= min_veg_h]
+
+  if (!length(z_veg)) {
+    return(data.frame(
+      n_all = length(z_all), n_veg = 0L, veg_ratio = 0,
+      p95 = NA_real_, p99 = NA_real_,
+      top10 = NA_real_, top20 = NA_real_, top30 = NA_real_
+    ))
+  }
+
+  data.frame(
+    n_all = length(z_all),
+    n_veg = length(z_veg),
+    veg_ratio = length(z_veg) / length(z_all),
+    p95 = quantile(z_veg, 0.95, names = FALSE),
+    p99 = quantile(z_veg, 0.99, names = FALSE),
+    top10 = top_mean(z_veg, 0.10),
+    top20 = top_mean(z_veg, 0.20),
+    top30 = top_mean(z_veg, 0.30)
+  )
+}</code></pre>
+</div>
+
+<h4 class="sub-head">07.2 — Proses semua TREE_ID</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>trees_prev &lt;- st_transform(trees, st_crs(n_prev))
+trees_curr &lt;- st_transform(trees, st_crs(n_curr))
+
+xy_prev &lt;- st_coordinates(trees_prev)
+xy_curr &lt;- st_coordinates(trees_curr)
+
+met_prev &lt;- bind_rows(lapply(seq_len(nrow(trees_prev)), function(i) {
+  metrics_one_tree(
+    n_prev, xy_prev[i,1], xy_prev[i,2],
+    radius = BUFFER_M,
+    min_veg_h = MIN_VEG_H_M
+  )
+}))
+
+met_curr &lt;- bind_rows(lapply(seq_len(nrow(trees_curr)), function(i) {
+  metrics_one_tree(
+    n_curr, xy_curr[i,1], xy_curr[i,2],
+    radius = BUFFER_M,
+    min_veg_h = MIN_VEG_H_M
+  )
+}))</code></pre>
+</div>
+
+<h4 class="sub-head">07.3 — Presence support, bukan klaim biologis</h4>
+<p class="body-text"><span class="inline-code">n_all</span> membantu membedakan data gap dari tidak adanya point vegetasi. <span class="inline-code">n_veg</span> dan <span class="inline-code">veg_ratio</span> menunjukkan dukungan point canopy-like. Ini disebut <b>presence support</b>, bukan otomatis “pohon hidup”.</p>
+
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>low_fence &lt;- function(x) {
+  x &lt;- x[is.finite(x)]
+  if (length(x) &lt; 4) return(0)
+  max(0, quantile(x, 0.25) - 1.5 * IQR(x))
+}
+
+cuts_prev &lt;- list(
+  n_all = low_fence(met_prev$n_all),
+  n_veg = low_fence(met_prev$n_veg),
+  ratio = low_fence(met_prev$veg_ratio)
+)
+
+cuts_curr &lt;- list(
+  n_all = low_fence(met_curr$n_all),
+  n_veg = low_fence(met_curr$n_veg),
+  ratio = low_fence(met_curr$veg_ratio)
+)
+
+presence_flag &lt;- function(m, cuts) {
+  data.frame(
+    data_ok = m$n_all &gt;= cuts$n_all,
+    canopy_support =
+      is.finite(m$p95) &amp;
+      m$n_veg &gt;= cuts$n_veg &amp;
+      m$veg_ratio &gt;= cuts$ratio
+  )
+}
+
+prs_prev &lt;- presence_flag(met_prev, cuts_prev)
+prs_curr &lt;- presence_flag(met_curr, cuts_curr)</code></pre>
+</div>
+
+
+<div class="callout callout-warn">
+  <div class="callout-head"><span class="callout-icon">▲</span>Tidak ada fixed canopy threshold biologis</div>
+  <div class="callout-text">Karena belum ada ground-truth tinggi/struktur tajuk, tutorial tidak menetapkan angka biologis universal untuk menyatakan pohon “ada/tidak ada”. Cutoff point support dibuat data-driven dan hasil akhirnya tetap memerlukan orthophoto/point-cloud re-check pada residual.</div>
+</div>
+
+  </div>
+</section>
+
+<section class="step" id="st08" data-idx="10">
+  <div class="step-head">
+    <div class="monument"><span>08</span></div>
+    <div class="step-title-wrap">
+      <h2>Delta Multi-Metrik & Technical Uncertainty</h2>
+      <p class="step-blurb">Δ≈0 dengan tajuk tetap hadir bukan otomatis residual; nilai kecil dapat berada dalam noise sistem.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st08', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+<h4 class="sub-head">08.1 — Bentuk satu tabel pasangan periode</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>pair &lt;- trees %&gt;%
+  st_drop_geometry() %&gt;%
+  transmute(tree_id = as.character(.data[[ID_FIELD]])) %&gt;%
+  bind_cols(
+    met_prev %&gt;% rename_with(~paste0(.x, &quot;_prev&quot;)),
+    met_curr %&gt;% rename_with(~paste0(.x, &quot;_curr&quot;)),
+    prs_prev %&gt;% rename_with(~paste0(.x, &quot;_prev&quot;)),
+    prs_curr %&gt;% rename_with(~paste0(.x, &quot;_curr&quot;))
+  ) %&gt;%
+  mutate(
+    d_p95 = p95_curr - p95_prev,
+    d_p99 = p99_curr - p99_prev,
+    d_t10 = top10_curr - top10_prev,
+    d_t20 = top20_curr - top20_prev,
+    d_t30 = top30_curr - top30_prev
+  )</code></pre>
+</div>
+
+<h4 class="sub-head">08.2 — Internal metric disagreement</h4>
+<p class="body-text">Jika P95, Top10, Top20, dan Top30 memberi delta yang sangat berbeda pada satu pokok, kemungkinan masalahnya lebih teknis daripada biologis. P99 tetap disimpan sebagai diagnostik tetapi tidak dijadikan penentu utama karena lebih sensitif ke ujung/noise.</p>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>pair &lt;- pair %&gt;%
+  rowwise() %&gt;%
+  mutate(
+    metric_spread = max(
+      c(d_p95, d_t10, d_t20, d_t30),
+      na.rm = TRUE
+    ) - min(
+      c(d_p95, d_t10, d_t20, d_t30),
+      na.rm = TRUE
+    ),
+    n_negative = sum(
+      c(d_p95, d_t10, d_t20, d_t30) &lt; 0,
+      na.rm = TRUE
+    )
+  ) %&gt;%
+  ungroup()
+
+spread_cut &lt;- quantile(
+  pair$metric_spread,
+  0.75, na.rm = TRUE
+) + 1.5 * IQR(
+  pair$metric_spread,
+  na.rm = TRUE
+)
+
+pair &lt;- pair %&gt;%
+  mutate(
+    metric_disagree =
+      is.finite(metric_spread) &amp;
+      metric_spread &gt; spread_cut
+  )</code></pre>
+</div>
+
+<h4 class="sub-head">08.3 — T_tech: threshold teknis konservatif</h4>
+<p class="body-text">Karena tidak tersedia pengukuran tinggi lapangan atau repeated flight yang identik, kita tidak mengklaim mempunyai “measurement error” lengkap. Kita membuat <b>technical uncertainty proxy</b> dari dua komponen: terrain hold-out uncertainty dan internal disagreement antar estimator tajuk.</p>
+
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code># Terrain component
+T_TERRAIN &lt;- sqrt(
+  qc_terrain_prev$nmad^2 +
+  qc_terrain_curr$nmad^2
+)
+
+# Canopy/internal metric component:
+T_METRIC &lt;- as.numeric(
+  quantile(
+    pair$metric_spread,
+    0.95,
+    na.rm = TRUE
+  )
+)
+
+# Conservative technical proxy
+T_TECH &lt;- max(
+  T_TERRAIN,
+  T_METRIC,
+  na.rm = TRUE
+)
+
+cat(&quot;T_TERRAIN =&quot;, T_TERRAIN, &quot;m\n&quot;)
+cat(&quot;T_METRIC  =&quot;, T_METRIC, &quot;m\n&quot;)
+cat(&quot;T_TECH    =&quot;, T_TECH, &quot;m\n&quot;)</code></pre>
+</div>
+
+
+<div class="callout callout-info">
+  <div class="callout-head"><span class="callout-icon">◆</span>Interpretasi T_TECH</div>
+  <div class="callout-text"><span class="inline-code">T_TECH</span> bukan ambang agronomi dan bukan bukti bahwa perubahan di bawah nilai itu pasti nol. Artinya: perubahan kecil pada kisaran tersebut belum cukup kuat untuk dibedakan dari ketidakpastian teknis yang tersedia pada dataset ini.</div>
+</div>
+
+<h4 class="sub-head">08.4 — Kenapa Δ≈0 tidak otomatis residual?</h4>
+<table class="data-table"><thead><tr><th>Kondisi</th><th>Makna aman</th></tr></thead><tbody><tr><td>Canopy support baik di kedua periode + |ΔP95| ≤ T_TECH</td><td><b>STABLE / NO DETECTABLE CHANGE</b>; bukan residual otomatis.</td></tr><tr><td>Canopy support baik + ΔP95 positif besar + metrik konsisten</td><td>Perubahan tinggi positif terukur; tetap bukan threshold biologis.</td></tr><tr><td>Canopy support baik + ΔP95 negatif besar + metrik konsisten</td><td>Kandidat residual struktural/biologis; lanjut peer/outlier check.</td></tr><tr><td>Metrik saling bertentangan</td><td>Technical residual / re-check point cloud.</td></tr><tr><td>Point cloud salah satu periode lemah</td><td>Technical residual; jangan simpulkan kondisi pokok.</td></tr></tbody></table>
+
+  </div>
+</section>
+
+<section class="step" id="st09" data-idx="11">
+  <div class="step-head">
+    <div class="monument"><span>09</span></div>
+    <div class="step-title-wrap">
+      <h2>Threshold Residual & Decision Logic</h2>
+      <p class="step-blurb">Residual = bukti teknis/struktur yang kuat, bukan sekadar delta kecil.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st09', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+<p class="body-text">Karena tidak ada standar agronomi minimum pertumbuhan, residual dari tinggi tidak boleh memakai batas tetap seperti 0,10 m. Gunakan <b>peer-based robust lower outlier</b> dan technical uncertainty secara bersamaan.</p>
+
+<h4 class="sub-head">09.1 — Tentukan peer group</h4>
+<p class="body-text">Jika tersedia field blok/batch tanam yang valid, gunakan itu. Jika tidak tersedia, fallback ke kuartil tinggi P95 periode sebelumnya agar pokok yang sangat berbeda ukurannya tidak langsung dibandingkan sebagai satu populasi.</p>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code># Fallback: peer berdasarkan kuartil P95 periode sebelumnya
+q &lt;- quantile(
+  pair$p95_prev,
+  probs = c(0.25, 0.50, 0.75),
+  na.rm = TRUE
+)
+
+breaks &lt;- unique(c(-Inf, q, Inf))
+
+if (length(breaks) &gt;= 3) {
+  pair$peer &lt;- cut(
+    pair$p95_prev,
+    breaks = breaks,
+    include.lowest = TRUE,
+    labels = FALSE
+  )
+} else {
+  pair$peer &lt;- 1L
+}</code></pre>
+</div>
+
+<h4 class="sub-head">09.2 — Lower outlier threshold per peer</h4>
+<p class="body-text">Threshold residual dibuat konservatif: sebuah delta harus berada di bawah lower fence kelompoknya <b>dan</b> melewati sisi negatif technical uncertainty.</p>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>peer_limits &lt;- pair %&gt;%
+  filter(
+    canopy_support_prev,
+    canopy_support_curr,
+    !metric_disagree,
+    is.finite(d_p95)
+  ) %&gt;%
+  group_by(peer) %&gt;%
+  summarise(
+    q1 = quantile(d_p95, 0.25, na.rm = TRUE),
+    q3 = quantile(d_p95, 0.75, na.rm = TRUE),
+    iqr = IQR(d_p95, na.rm = TRUE),
+    lower_peer = q1 - 1.5 * iqr,
+    upper_peer = q3 + 1.5 * iqr,
+    n_peer = n(),
+    .groups = &quot;drop&quot;
+  ) %&gt;%
+  mutate(
+    # Harus lebih negatif daripada noise floor teknis
+    lower_residual = pmin(
+      lower_peer,
+      -T_TECH
+    )
+  )
+
+pair &lt;- pair %&gt;%
+  left_join(peer_limits, by = &quot;peer&quot;)</code></pre>
+</div>
+
+<h4 class="sub-head">09.3 — Decision logic residual</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>pair &lt;- pair %&gt;%
+  mutate(
+    status = case_when(
+
+      # Data gap: total point support rendah
+      !data_ok_curr ~ &quot;TECH_DATA_GAP_CURRENT&quot;,
+
+      # Previous ada dukungan tajuk, current kehilangan dukungan
+      canopy_support_prev &amp;
+        !canopy_support_curr &amp;
+        data_ok_curr ~ &quot;CANOPY_LOSS_OR_RECONSTRUCTION&quot;,
+
+      # Keduanya tidak punya canopy support namun data cukup
+      !canopy_support_prev &amp;
+        !canopy_support_curr &amp;
+        data_ok_prev &amp;
+        data_ok_curr ~ &quot;NO_CANOPY_SUPPORT_BOTH&quot;,
+
+      # Metrik tinggi antar-estimator tidak konsisten
+      metric_disagree ~ &quot;TECH_METRIC_DISAGREEMENT&quot;,
+
+      # Negative outlier harus:
+      # 1) canopy support valid di kedua periode
+      # 2) dP95 di bawah lower_residual
+      # 3) &gt;=3 dari 4 metrik utama sama-sama negatif
+      canopy_support_prev &amp;
+        canopy_support_curr &amp;
+        is.finite(lower_residual) &amp;
+        d_p95 &lt; lower_residual &amp;
+        n_negative &gt;= 3 ~ &quot;NEGATIVE_HEIGHT_OUTLIER&quot;,
+
+      # Tajuk hadir dan perubahan kecil relatif ke noise teknis
+      canopy_support_prev &amp;
+        canopy_support_curr &amp;
+        abs(d_p95) &lt;= T_TECH ~ &quot;STABLE_NO_DETECTABLE_CHANGE&quot;,
+
+      # Lainnya: tajuk masih didukung, tidak masuk residual keras
+      canopy_support_curr ~ &quot;PRESENT_NO_HARD_RESIDUAL&quot;,
+
+      TRUE ~ &quot;REVIEW&quot;
+    ),
+
+    residual_flag = status %in% c(
+      &quot;TECH_DATA_GAP_CURRENT&quot;,
+      &quot;CANOPY_LOSS_OR_RECONSTRUCTION&quot;,
+      &quot;NO_CANOPY_SUPPORT_BOTH&quot;,
+      &quot;TECH_METRIC_DISAGREEMENT&quot;,
+      &quot;NEGATIVE_HEIGHT_OUTLIER&quot;,
+      &quot;REVIEW&quot;
+    )
+  )</code></pre>
+</div>
+
+
+<div class="callout callout-success">
+  <div class="callout-head"><span class="callout-icon">✓</span>Aturan utama</div>
+  <div class="callout-text"><b>Pokok dengan tinggi relatif hampir sama pada dua periode dan canopy support tetap baik → STABLE_NO_DETECTABLE_CHANGE, bukan residual.</b> Ini mencegah noise SfM atau pertumbuhan kecil langsung dianggap masalah.</div>
+</div>
+
+<h4 class="sub-head">09.4 — Persistent stable baru dievaluasi dari histori</h4>
+<p class="body-text">Satu interval stable belum cukup untuk menyimpulkan pertumbuhan terhambat. Jika status stable terjadi berulang pada beberapa pasangan periode, barulah dapat dibuat flag histori seperti <span class="inline-code">PERSISTENT_STABLE</span> untuk review agronomi—tetap bukan diagnosis otomatis tanpa standar lapangan.</p>
+
+  </div>
+</section>
+
+<section class="step" id="st10" data-idx="12">
+  <div class="step-head">
+    <div class="monument"><span>10</span></div>
+    <div class="step-title-wrap">
+      <h2>Residual Point, Buffer & Polygon Zone</h2>
+      <p class="step-blurb">Zona residual dibuat hanya dari flag yang membutuhkan re-check, bukan dari pokok stable.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st10', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+<h4 class="sub-head">10.1 — Join kembali ke geometry TREE_ID</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>pair_sf &lt;- trees %&gt;%
+  select(tree_id) %&gt;%
+  left_join(
+    pair %&gt;%
+      select(
+        tree_id,
+        p95_prev, p95_curr, d_p95,
+        d_p99, d_t10, d_t20, d_t30,
+        metric_spread, T_TECH = T_TECH,
+        status, residual_flag
+      ),
+    by = &quot;tree_id&quot;
+  )</code></pre>
+</div>
+
+<h4 class="sub-head">10.2 — Residual point & buffer individual 2 m</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>residual_point &lt;- pair_sf %&gt;%
+  filter(residual_flag)
+
+residual_buffer &lt;- st_buffer(
+  residual_point,
+  dist = 2.0
+)
+
+st_write(
+  residual_point,
+  paste0(
+    &quot;output/residual_point_&quot;,
+    PREV_PERIOD, &quot;_&quot;, CURR_PERIOD, &quot;.shp&quot;
+  ),
+  delete_layer = TRUE
+)
+
+st_write(
+  residual_buffer,
+  paste0(
+    &quot;output/residual_buffer_&quot;,
+    PREV_PERIOD, &quot;_&quot;, CURR_PERIOD, &quot;.shp&quot;
+  ),
+  delete_layer = TRUE
+)</code></pre>
+</div>
+
+<h4 class="sub-head">10.3 — Dissolved residual zone</h4>
+<p class="body-text">Buffer residual yang saling overlap digabung menjadi zona re-checking. Simpan juga jumlah TREE_ID dan jenis reason/status yang membentuk setiap zona.</p>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>zone_geom &lt;- st_union(residual_buffer)
+zone_geom &lt;- st_cast(zone_geom, &quot;POLYGON&quot;)
+
+residual_zone &lt;- st_sf(
+  ZONE_ID = seq_along(zone_geom),
+  geometry = zone_geom
+)
+
+hit &lt;- st_intersects(
+  residual_zone,
+  residual_point
+)
+
+residual_zone$N_TREE &lt;- lengths(hit)
+
+residual_zone$REASON &lt;- vapply(
+  hit,
+  function(ix) {
+    if (!length(ix)) return(&quot;&quot;)
+    paste(
+      sort(unique(residual_point$status[ix])),
+      collapse = &quot;|&quot;
+    )
+  },
+  character(1)
+)
+
+residual_zone$AREA_M2 &lt;- as.numeric(
+  st_area(residual_zone)
+)
+
+st_write(
+  residual_zone,
+  paste0(
+    &quot;output/residual_zone_&quot;,
+    PREV_PERIOD, &quot;_&quot;, CURR_PERIOD, &quot;.shp&quot;
+  ),
+  delete_layer = TRUE
+)</code></pre>
+</div>
+
+<h4 class="sub-head">10.4 — Prioritas re-checking</h4>
+<table class="data-table"><thead><tr><th>Status</th><th>Prioritas</th><th>Apa yang dicek</th></tr></thead><tbody><tr><td>CANOPY_LOSS_OR_RECONSTRUCTION</td><td>Tinggi</td><td>Orthophoto, point cloud kedua periode, kemungkinan pokok hilang/mati vs rekonstruksi gagal.</td></tr><tr><td>NO_CANOPY_SUPPORT_BOTH</td><td>Tinggi</td><td>Apakah memang kosong/potensi sisip atau TREE_ID/point support bermasalah.</td></tr><tr><td>NEGATIVE_HEIGHT_OUTLIER</td><td>Tinggi</td><td>Kerusakan tajuk, perubahan struktur, pruning, mismatch, atau isu terrain.</td></tr><tr><td>TECH_METRIC_DISAGREEMENT</td><td>Sedang–tinggi</td><td>Spike/noise SfM, density, crown sampling.</td></tr><tr><td>TECH_DATA_GAP_CURRENT</td><td>Teknis</td><td>Coverage/rekonstruksi point cloud; jangan interpretasi biologis.</td></tr><tr><td>STABLE_NO_DETECTABLE_CHANGE</td><td>Bukan residual</td><td>Arsip sebagai stable; baru evaluasi jika persisten beberapa interval.</td></tr></tbody></table>
+
+  </div>
+</section>
+
+<section class="step" id="st11" data-idx="13">
+  <div class="step-head">
+    <div class="monument"><span>11</span></div>
+    <div class="step-title-wrap">
+      <h2>Arsip & Rolling ke Periode Berikutnya</h2>
+      <p class="step-blurb">Periode baru hanya menambah satu dataset baru; pasangan sebelumnya sudah menjadi arsip.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st11', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+<h4 class="sub-head">11.1 — Output yang disimpan tiap periode</h4>
+<table class="data-table"><thead><tr><th>File</th><th>Fungsi</th></tr></thead><tbody><tr><td><span class='inline-code'>P5_registered.laz</span></td><td>LAS terbaru dalam reference frame yang sudah lolos QC.</td></tr><tr><td><span class='inline-code'>P5_DTM.tif</span></td><td>Terrain periode terbaru.</td></tr><tr><td><span class='inline-code'>P5_normalized.laz</span></td><td>Point cloud relatif untuk analisis.</td></tr><tr><td><span class='inline-code'>metrics_P5.csv</span></td><td>P95/P99/Top10/20/30 + point support.</td></tr><tr><td><span class='inline-code'>delta_P4_P5.csv</span></td><td>Delta multi-metrik dua periode.</td></tr><tr><td><span class='inline-code'>residual_zone_P4_P5.shp</span></td><td>Zona re-checking operasional.</td></tr></tbody></table>
+
+<h4 class="sub-head">11.2 — Siklus berikutnya</h4>
+<pre style="font-family:'IBM Plex Mono',monospace;line-height:1.8;color:#C9D4D6;background:#0D1315;border:1px solid #263135;border-radius:8px;padding:14px 16px;max-width:720px;overflow:auto">
+Saat P6 tersedia:
+
+PREV_PERIOD = P5
+CURR_PERIOD = P6
+
+Gunakan metrics/registered P5 yang sudah tersimpan.
+Hanya proses P6 sebagai data baru.
+Residual terbaru = P5 ↔ P6.
+P1–P4 tidak perlu diproses ulang.
+</pre>
+
+<h4 class="sub-head">11.3 — Histori tetap penting, tetapi ringan</h4>
+<p class="body-text">Histori tidak dibuang. Simpan tabel long untuk analisis tren, tetapi tidak perlu membuka semua LAS untuk setiap siklus.</p>
+
+<div class="code-block">
+  <div class="code-bar"><span>R CONSOLE</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+  <pre><code>history_long &lt;- bind_rows(
+  read.csv(&quot;archive/metrics_P3.csv&quot;),
+  read.csv(&quot;archive/metrics_P4.csv&quot;),
+  read.csv(&quot;archive/metrics_P5.csv&quot;)
+)
+
+# Contoh: deteksi status stable berulang
+history_long &lt;- history_long %&gt;%
+  arrange(tree_id, date)</code></pre>
+</div>
+
+
+<div class="callout callout-info">
+  <div class="callout-head"><span class="callout-icon">◆</span>Kenapa rolling lebih efisien</div>
+  <div class="callout-text">LAS adalah data berat. Residual operasional terbaru hanya memerlukan dua snapshot berurutan. Histori cukup disimpan sebagai registered LAS arsip + metrics/CSV sehingga analisis tren tetap tersedia tanpa memproses ulang seluruh point cloud.</div>
+</div>
+
+  </div>
+</section>
+
+<section class="step" id="st12" data-idx="14">
+  <div class="step-head">
+    <div class="monument"><span>12</span></div>
+    <div class="step-title-wrap">
+      <h2>Checklist Validasi Final</h2>
+      <p class="step-blurb">Residual zone hanya dipercaya bila geometri, terrain, point support, dan metric consistency sudah lolos QC.</p>
+    </div>
+    <label class="done-toggle">
+      <input type="checkbox" onchange="toggleDone('st12', this)">
+      <span>selesai</span>
+    </label>
+  </div>
+  <div class="step-body">
+    
+<h4 class="sub-head">Checklist sebelum residual dianggap valid</h4>
+<table class="data-table"><thead><tr><th>Check</th><th>Lulus bila</th></tr></thead><tbody><tr><td>CRS</td><td>Kedua LAS dan TREE_ID berada pada CRS proyeksi meter yang konsisten.</td></tr><tr><td>XY alignment</td><td>Buffer TREE_ID jatuh pada pokok yang sama di kedua periode.</td></tr><tr><td>Ground model</td><td>DTM masing-masing periode lolos visual + hold-out QC yang memadai.</td></tr><tr><td>Normalization</td><td>Ground normalized dekat 0 tanpa pola anomali besar.</td></tr><tr><td>Point support</td><td>Tidak ada data gap ekstrem pada buffer yang diinterpretasi.</td></tr><tr><td>Metric consistency</td><td>P95/Top10/20/30 tidak saling bertentangan secara ekstrem.</td></tr><tr><td>Stable Δ</td><td>Δ kecil dengan canopy support baik tidak dimasukkan residual otomatis.</td></tr><tr><td>Residual zone</td><td>Hanya status yang memang membutuhkan re-check yang dipoligonkan.</td></tr><tr><td>Interpretasi</td><td>Residual tetap diverifikasi dengan orthophoto/point cloud dan lapangan bila diperlukan.</td></tr></tbody></table>
+
+
+<div class="callout callout-success">
+  <div class="callout-head"><span class="callout-icon">✓</span>Definisi final v0.6.0</div>
+  <div class="callout-text">MAS POPO tidak mencoba memaksa satu angka threshold agronomi universal. Sistem menggunakan <b>dua periode terakhir</b>, tinggi relatif P95 dari normalized point cloud, QC terrain, point-support/presence support, konsistensi multi-metrik, technical uncertainty proxy, dan peer-based negative outlier untuk menghasilkan <b>residual zone yang konservatif dan dapat ditelusuri</b>.</div>
+</div>
+
+  </div>
+</section>
+
+
+  <div class="footer-note">
+    Tutorial v0.6.0 — desain operasional MAS POPO menggunakan rolling dua periode. Tinggi utama = P95 normalized point cloud dalam buffer 2 m. Common terrain reference tidak diwajibkan. Master registration dapat berasal dari periode mana pun dengan full PPK/GCP terbaik. Δ tinggi kecil dengan canopy support baik diklasifikasikan sebagai <b>STABLE / NO DETECTABLE CHANGE</b>, bukan residual otomatis. Residual zone dibentuk dari data gap, canopy-support loss, metric disagreement, persistent/no-canopy evidence, atau negative height outlier yang lolos technical uncertainty dan peer-based QC.
+  </div>
+</main>
+</div>
+
+<script>
+function copyCode(btn){
+  const code = btn.closest('.code-block').querySelector('code').innerText;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = 'COPIED'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+function updateProgress(){
+  const total = document.querySelectorAll('.step').length;
+  const done = document.querySelectorAll('.step.is-done').length;
+  document.getElementById('progress-count').textContent = done + '/' + total;
+  document.getElementById('progress-fill').style.width = (done/total*100) + '%';
+}
+
+function toggleDone(id, checkbox){
+  const step = document.getElementById(id);
+  step.classList.toggle('is-done', checkbox.checked);
+  updateProgress();
+}
+
+const navItems = document.querySelectorAll('.nav-item');
+const stepSections = document.querySelectorAll('.step');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      navItems.forEach(n => n.classList.remove('active'));
+      const active = document.querySelector('.nav-item[data-target="'+entry.target.id+'"]');
+      if(active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+stepSections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
