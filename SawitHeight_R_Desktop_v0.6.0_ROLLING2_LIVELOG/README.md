@@ -1,4 +1,4 @@
-# SawitHeight R Desktop v0.6.0 — MAS POPO Rolling 2-Period
+# SawitHeight R Desktop v0.6.0 — Moto Buto Rolling 2-Period
 
 Aplikasi desktop Windows untuk monitoring tinggi relatif dan residual zone pokok sawit TBM dari **dua dense point cloud SfM-MVS terakhir**.
 
